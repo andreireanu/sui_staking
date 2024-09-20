@@ -1,39 +1,28 @@
 module sui_staking::PFP_NFT {
     use sui::coin::{Self, Coin};
-    use sui::table::{Self, Table};
-    // use std::ascii::String;
-    // use std::string::String as String;
     use std::ascii::String;
-    // use std::string::{utf8};
     use sui::sui::SUI;
     use sui::url::{Self, Url};
     use sui::random::{Random, new_generator};
     use sui::balance;
 
-
-    const COMMON: u8 = 1;
-    const RARE: u8 = 2;
-    const LEGENDARY: u8 = 3;
-    const EPIC: u8 = 4;
-
-    const TOTAL_COMMON: u64 = 5000;
-    const TOTAL_RARE: u64 = 3000;
-    const TOTAL_LEGENDARY: u64 = 1500;
-    const TOTAL_EPIC: u64 = 500;
-    const TOTAL_NFTS: u64 = 10_000;
+    const TOTAL_COMMON: u16 = 4;
+    const TOTAL_RARE: u16 = 3;
+    const TOTAL_LEGENDARY: u16 = 2;
+    const TOTAL_EPIC: u16 = 1;
     const MINT_COST: u64 = 100_000_000; // 0.1 SUI
 
     public struct PFP has key, store {
         id: UID,
         name : String,
-        rarity: u8,
+        rarity: u16,
         img_url : Url,
     }
 
     public struct PFPState has key {
         id: UID,
-        total_minted: u64,
-        minted_per_rarity: Table<u8, u64>,
+        total_minted: u16,
+        minted_per_rarity: vector<u16>,
         treasury: sui::balance::Balance<SUI>,
         url_vec: vector<Url>,
         name_vec: vector<String>,
@@ -46,12 +35,13 @@ module sui_staking::PFP_NFT {
     const EInvalidAmount: u64 = 200;
     const EAllNFTsMinted: u64 = 201;
     const ENoRaritiesLeft: u64 = 202;
+    const EInvalidCollection: u64 = 203;
 
     fun init(ctx: &mut TxContext) {
         let pfp_state = PFPState {
             id: object::new(ctx),
             total_minted: 0,
-            minted_per_rarity: table::new(ctx),
+            minted_per_rarity: vector[0, 0, 0, 0],
             treasury: balance::zero(),
             url_vec: vector::empty<Url>(),
             name_vec: vector::empty<String>(),
@@ -89,7 +79,8 @@ module sui_staking::PFP_NFT {
     entry fun mint(payment: &mut Coin<SUI>, pfp_state: &mut PFPState, random: &Random, ctx: &mut TxContext) {
         let amount = coin::value(payment);
         assert!(amount >= MINT_COST, EInvalidAmount);
-        assert!(pfp_state.total_minted < TOTAL_NFTS, EAllNFTsMinted);
+        assert!(pfp_state.total_minted < TOTAL_COMMON + TOTAL_RARE + TOTAL_EPIC + TOTAL_LEGENDARY, EAllNFTsMinted);
+        assert!(pfp_state.url_vec.length() == 4, EInvalidCollection);
         
         let mint_cost_coin = coin::split(payment, MINT_COST, ctx);
         let mint_cost_balance = coin::into_balance(mint_cost_coin);
@@ -100,51 +91,44 @@ module sui_staking::PFP_NFT {
         transfer::transfer(pfp, tx_context::sender(ctx));
     }
 
-    fun mint_nft(rarity: u8, pfp_state: &mut PFPState, ctx: &mut TxContext): PFP{
+    fun mint_nft(rarity: u64, pfp_state: &mut PFPState, ctx: &mut TxContext): PFP{
 
         let pfp = PFP {
             id: object::new(ctx),
             name: pfp_state.name_vec[rarity as u64],
-            rarity: rarity,
+            rarity: rarity as u16,
             img_url: pfp_state.url_vec[rarity as u64],
         };
 
-        if (table::contains(&pfp_state.minted_per_rarity, rarity)) {
-            let count = table::borrow_mut(&mut pfp_state.minted_per_rarity, rarity);
-            *count = *count + 1;
-        } else {
-            table::add(&mut pfp_state.minted_per_rarity, rarity, 1);
-        };
+        let count = vector::borrow_mut(&mut pfp_state.minted_per_rarity, rarity);
+        *count = *count + 1;
         pfp_state.total_minted = pfp_state.total_minted + 1;
         pfp
     }
 
-    fun select_rarity(pfp_state: &PFPState, random: &Random, ctx: &mut TxContext): u8 {
-        let mut available_rarities = vector::empty<u8>();
+    fun select_rarity(pfp_state: &PFPState, random: &Random, ctx: &mut TxContext): u64 {
+            
+        let left_common = TOTAL_COMMON - pfp_state.minted_per_rarity[0] ;
+        let left_rare = TOTAL_RARE - pfp_state.minted_per_rarity[1] ;
+        let left_legendary = TOTAL_LEGENDARY- pfp_state.minted_per_rarity[3] ;
+        let left_epic = TOTAL_EPIC - pfp_state.minted_per_rarity[2] ;
         
-        if (!table::contains(&pfp_state.minted_per_rarity, COMMON) || 
-            *table::borrow(&pfp_state.minted_per_rarity, COMMON) < TOTAL_COMMON) {
-            vector::push_back(&mut available_rarities, COMMON);
-        };
-        if (!table::contains(&pfp_state.minted_per_rarity, RARE) || 
-            *table::borrow(&pfp_state.minted_per_rarity, RARE) < TOTAL_RARE) {
-            vector::push_back(&mut available_rarities, RARE);
-        };
-        if (!table::contains(&pfp_state.minted_per_rarity, LEGENDARY) || 
-            *table::borrow(&pfp_state.minted_per_rarity, LEGENDARY) < TOTAL_LEGENDARY) {
-            vector::push_back(&mut available_rarities, LEGENDARY);
-        };
-        if (!table::contains(&pfp_state.minted_per_rarity, EPIC) || 
-            *table::borrow(&pfp_state.minted_per_rarity, EPIC) < TOTAL_EPIC) {
-            vector::push_back(&mut available_rarities, EPIC);
-        };
+        let total_left = left_common + left_rare + left_legendary + left_epic;
 
-        assert!(!vector::is_empty(&available_rarities), ENoRaritiesLeft);
+        assert!(total_left == 0, ENoRaritiesLeft);
 
         let mut generator = new_generator(random, ctx);
-        let length = vector::length(&available_rarities);
-        let random_index = generator.generate_u8_in_range(0, length as u8);
-        *vector::borrow(&available_rarities, random_index as u64)
+        let random_index = generator.generate_u16_in_range(0, total_left);
+
+        if (random_index < left_common) {
+            return 0
+        } else if (random_index < left_common + left_rare) {
+            return 1
+        } else if (random_index < left_common + left_rare + left_epic) {
+            return 2
+        } else {
+            return 3
+        }
     }
 
     public fun burn(pfp: PFP) {
