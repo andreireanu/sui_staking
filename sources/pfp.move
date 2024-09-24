@@ -1,16 +1,20 @@
 module sui_staking::PFP_NFT {
     use sui::coin::{Self, Coin};
     use std::ascii::String;
+    use std::string::utf8;
     use sui::sui::SUI;
     use sui::url::{Self, Url};
     use sui::random::{Random, new_generator};
     use sui::balance;
+    use sui::display;
+    use sui::package;
+    use sui::tx_context::{sender};
 
     const TOTAL_COMMON: u16 = 4;
     const TOTAL_RARE: u16 = 3;
     const TOTAL_LEGENDARY: u16 = 2;
     const TOTAL_EPIC: u16 = 1;
-    const MINT_COST: u64 = 100_000_000; // 0.1 SUI
+    const MINT_COST: u64 = 10_000_000; // 0.01 SUI
 
     public struct PFP has key, store {
         id: UID,
@@ -32,12 +36,38 @@ module sui_staking::PFP_NFT {
         id: UID
     }
 
+    public struct PFP_NFT has drop {}
+
     const EInvalidAmount: u64 = 200;
     const EAllNFTsMinted: u64 = 201;
     const ENoRaritiesLeft: u64 = 202;
     const EInvalidCollection: u64 = 203;
 
-    fun init(ctx: &mut TxContext) {
+    fun init(otw: PFP_NFT, ctx: &mut TxContext) {
+
+        let keys:vector<std::string::String> = vector[
+            utf8(b"name"),
+            utf8(b"description"),
+            utf8(b"image"),
+            utf8(b"project_url"),
+            utf8(b"creator"),
+        ];
+
+        let values = vector[
+            utf8(b"New rarities collection"),
+            utf8(b"A collection with 4 different rarities!"),
+            utf8(b"https://i.imgur.com/nWGBDqQ.png"),
+            utf8(b"http://some-website.art"),
+            utf8(b"A Great Team"),
+        ];
+
+        let publisher = package::claim(otw, ctx);
+        let mut display = display::new<PFP>(&publisher, ctx);
+        display::add_multiple(&mut display, keys, values);
+        display::update_version(&mut display);
+        transfer::public_transfer(publisher, sender(ctx));
+        transfer::public_transfer(display, sender(ctx));
+
         let pfp_state = PFPState {
             id: object::new(ctx),
             total_minted: 0,
@@ -46,7 +76,6 @@ module sui_staking::PFP_NFT {
             url_vec: vector::empty<Url>(),
             name_vec: vector::empty<String>(),
         };
-        
         transfer::share_object(pfp_state);
 
         let admin_cap = AdminCap { id: object::new(ctx) };
@@ -110,24 +139,24 @@ module sui_staking::PFP_NFT {
             
         let left_common = TOTAL_COMMON - pfp_state.minted_per_rarity[0] ;
         let left_rare = TOTAL_RARE - pfp_state.minted_per_rarity[1] ;
-        let left_legendary = TOTAL_LEGENDARY- pfp_state.minted_per_rarity[3] ;
-        let left_epic = TOTAL_EPIC - pfp_state.minted_per_rarity[2] ;
+        let left_legendary = TOTAL_LEGENDARY- pfp_state.minted_per_rarity[2] ;
+        let left_epic = TOTAL_EPIC - pfp_state.minted_per_rarity[3] ;
         
         let total_left = left_common + left_rare + left_legendary + left_epic;
 
-        assert!(total_left == 0, ENoRaritiesLeft);
+        assert!(total_left > 0, ENoRaritiesLeft);
 
         let mut generator = new_generator(random, ctx);
-        let random_index = generator.generate_u16_in_range(0, total_left);
+        let random_index = generator.generate_u16_in_range(1, total_left);
 
-        if (random_index < left_common) {
-            return 0
-        } else if (random_index < left_common + left_rare) {
-            return 1
-        } else if (random_index < left_common + left_rare + left_epic) {
-            return 2
+        if (random_index <= left_common) {
+            return 0 // Common
+        } else if (random_index <= left_common + left_rare) {
+            return 1 // Rare
+        } else if (random_index <= left_common + left_rare + left_epic) {
+            return 2 // Epic
         } else {
-            return 3
+            return 3 // Legendary
         }
     }
 
