@@ -153,7 +153,7 @@ module sui_staking::PFP_NFT {
             return 0 // Common
         } else if (random_index <= left_common + left_rare) {
             return 1 // Rare
-        } else if (random_index <= left_common + left_rare + left_epic) {
+        } else if (random_index <= left_common + left_rare + left_legendary) {
             return 2 // Epic
         } else {
             return 3 // Legendary
@@ -169,5 +169,10 @@ module sui_staking::PFP_NFT {
         assert!(balance::value(&pfp_state.treasury) >= amount, EInvalidAmount);
         let withdrawal_amount = coin::take<SUI>(&mut pfp_state.treasury, amount, ctx);
         transfer::public_transfer(withdrawal_amount, tx_context::sender(ctx));
+    }
+
+    #[test_only]
+    public fun init_for_testing(ctx: &mut TxContext) {
+        init(PFP_NFT {}, ctx);
     }
 }
