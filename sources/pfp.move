@@ -175,4 +175,20 @@ module sui_staking::PFP_NFT {
     public fun init_for_testing(ctx: &mut TxContext) {
         init(PFP_NFT {}, ctx);
     }
+
+    #[test_only]
+    public fun get_name_vec(pfp_state: &PFPState): &vector<String> {
+        &pfp_state.name_vec
+    }
+
+    #[test_only]
+    public fun get_url_vec(pfp_state: &PFPState): &vector<Url> {
+        &pfp_state.url_vec
+    }
+
+    #[test_only]
+    public fun test_select_rarity(pfp_state: &PFPState, random: &Random, ctx: &mut TxContext): u64 {
+        select_rarity(pfp_state, random, ctx)
+    }
+ 
 }
