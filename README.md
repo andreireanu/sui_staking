@@ -11,11 +11,11 @@ sui client publish --gas-budget 100000000
 #### CALL SET_COLLECTION FUNCTION (change package name and minter cap after publishing):
 ```bash
 sui client call \
---package 0x7b31e67e04c6bd9298d548ccc07cb34888e84f29c057e9b18f665be6c39c5de0 \
+--package 0x97d7b904a8eae1bab03d5ce6e2f0c7ed42840d5d6c80639a52f2e4a38870197f \
 --module PFP_NFT \
 --function set_collection \
---args "0x08ce3852142e00323d9a84f994730ad149721eef0a7b6beb7cdb82411a503186" \
-"0x2f745a7f24f747a5abd569535e1fd97a6babbbe2eaed8135a54995f14aebf87b" \
+--args "0x579705cd6df1438e837627e7eff9386c367dc5ba58b793e5c8e85471a5765bf5" \
+"0xf07b1359e7ee30e511de2e57a12c5f43e4b14fb24cf39a0379590303cf8683c2" \
 "Common" \
 "https://i.imgur.com/TYekL74.png" \
 "Rare" \
@@ -31,30 +31,18 @@ sui client call \
 #### CALL MINT FUNCTION (change package name and minter cap after publishing):
 ```bash
 sui client call \
---package 0x7b31e67e04c6bd9298d548ccc07cb34888e84f29c057e9b18f665be6c39c5de0 \
+--package 0x97d7b904a8eae1bab03d5ce6e2f0c7ed42840d5d6c80639a52f2e4a38870197f \
 --module PFP_NFT \
 --function mint \
 --args "0xa26658d8ca582d78bfda1a9866cf296d9d81a0662f8de1a8875c0b68140180f9" \
-"0x2f745a7f24f747a5abd569535e1fd97a6babbbe2eaed8135a54995f14aebf87b" \
+"0xf07b1359e7ee30e511de2e57a12c5f43e4b14fb24cf39a0379590303cf8683c2" \
 "0x8" \
 --gas-budget 100000000
  
 ```
 
-
-#### CALL WITHDRAW FUNCTION (change package name and minter cap after publishing):
-```bash
-sui client call \
---package 0x549acd265bc387b8331f07d2e0e392c969397643ce73213080757e207ec2c885 \
---module PFP_NFT \
---function withdraw \
---args "0xb0b9ed0e943344e82b0deeba7e1a8d3de728a3084ee8f1aed91dc4c094744eb6" \
-"0x74cfc123cd455ce03c368a24ec2662450ea98dfd22fdb55d5e801e4c5ef78eef" \
-"0x8" \
---gas-budget 100000000
  
-```
-
+Collection on chain: https://suiscan.xyz/testnet/collection/0x97d7b904a8eae1bab03d5ce6e2f0c7ed42840d5d6c80639a52f2e4a38870197f::PFP_NFT::PFP/items 
 Collection image:   "https://imgur.com/nWGBDqQ" \
 Common url:         "https://i.imgur.com/TYekL74.png" \
 Rare url:           "https://i.imgur.com/9Lu930k.png" \

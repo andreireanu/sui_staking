@@ -185,5 +185,15 @@ module sui_staking::PFP_NFT {
     public fun get_url_vec(pfp_state: &PFPState): &vector<Url> {
         &pfp_state.url_vec
     }
- 
+
+    #[test_only]
+    public fun get_total_minted(state: &PFPState): u16 {
+        state.total_minted
+    }
+
+    #[test_only]
+    public fun get_minted_per_rarity(state: &PFPState): vector<u16> {
+        state.minted_per_rarity
+    }
+
 }

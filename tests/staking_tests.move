@@ -8,6 +8,7 @@ module sui_staking::staking_tests{
     use sui::random::{Self, Random};
     use sui::coin::{Self};
     use sui::sui::SUI;
+    use std::debug;
 
     #[test]
     fun test_set_collection() {
@@ -133,11 +134,26 @@ module sui_staking::staking_tests{
             let ctx = test_scenario::ctx(scenario);
             let mut payment = coin::mint_for_testing<SUI>(1_000_000_000, ctx);
 
-            PFP_NFT::mint( &mut payment, &mut pfp_state, &random, ctx);
+            let mut i = 0;
+            while (i < 10 ) {
+                PFP_NFT::mint( &mut payment, &mut pfp_state, &random, ctx);
+                i = i + 1;
+            };
 
+            assert!(pfp_state.get_total_minted() == 10, 0);
+            
+            let minted_per_rarity = pfp_state.get_minted_per_rarity();
+            debug::print(&minted_per_rarity);
+            assert!(vector::borrow(&minted_per_rarity, 0) == 4, 1);
+            assert!(vector::borrow(&minted_per_rarity, 1) == 3, 2);
+            assert!(vector::borrow(&minted_per_rarity, 2) == 2, 3);
+            assert!(vector::borrow(&minted_per_rarity, 3) == 1, 4);
+            
             test_scenario::return_shared(pfp_state);
             test_scenario::return_shared(random);
             transfer::public_transfer(payment, dummy);
+
+
         };
         test_scenario::end(scenario_val);
     }
