@@ -171,6 +171,10 @@ module sui_staking::PFP_NFT {
         transfer::public_transfer(withdrawal_amount, tx_context::sender(ctx));
     }
 
+    public fun get_rarity(pfp: &PFP): u16 {
+        pfp.rarity
+    }
+
     #[test_only]
     public fun init_for_testing(ctx: &mut TxContext) {
         init(PFP_NFT {}, ctx);
