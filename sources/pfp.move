@@ -9,6 +9,7 @@ module sui_staking::PFP_NFT {
     use sui::display;
     use sui::package;
     use sui::tx_context::{sender};
+    use std::debug;
 
     const TOTAL_COMMON: u16 = 4;
     const TOTAL_RARE: u16 = 3;
@@ -117,11 +118,11 @@ module sui_staking::PFP_NFT {
 
         let rarity = select_rarity(pfp_state, random, ctx);
         let pfp = mint_nft(rarity, pfp_state, ctx);
+        debug::print(&tx_context::sender(ctx));
         transfer::transfer(pfp, tx_context::sender(ctx));
     }
 
     fun mint_nft(rarity: u64, pfp_state: &mut PFPState, ctx: &mut TxContext): PFP{
-
         let pfp = PFP {
             id: object::new(ctx),
             name: pfp_state.name_vec[rarity as u64],
@@ -136,7 +137,6 @@ module sui_staking::PFP_NFT {
     }
 
     fun select_rarity(pfp_state: &PFPState, random: &Random, ctx: &mut TxContext): u64 {
-            
         let left_common = TOTAL_COMMON - pfp_state.minted_per_rarity[0] ;
         let left_rare = TOTAL_RARE - pfp_state.minted_per_rarity[1] ;
         let left_legendary = TOTAL_LEGENDARY- pfp_state.minted_per_rarity[2] ;
@@ -198,6 +198,11 @@ module sui_staking::PFP_NFT {
     #[test_only]
     public fun get_minted_per_rarity(state: &PFPState): vector<u16> {
         state.minted_per_rarity
+    }
+
+    #[test_only]
+    public fun get_nft_rarity(nft: &PFP): u16 {
+        nft.rarity 
     }
 
 }

@@ -1,5 +1,5 @@
 #[test_only]
-module sui_staking::staking_tests{
+module sui_staking::nft_tests{
 
     use sui::test_scenario;
     use sui_staking::PFP_NFT::{Self, PFPState, AdminCap};
@@ -56,17 +56,17 @@ module sui_staking::staking_tests{
             assert!(vector::length(name_vec) == 4, 0);
             assert!(vector::length(url_vec) == 4, 1);
 
-            assert!(vector::borrow(name_vec, 0) == &string(b"Common"), 2);
-            assert!(vector::borrow(url_vec, 0) == url::new_unsafe(string(b"https://i.imgur.com/TYekL74.png")), 3);
+            assert!(vector::borrow(name_vec, 0) == &common_name, 2);
+            assert!(vector::borrow(url_vec, 0) == url::new_unsafe(common_url), 3);
 
-            assert!(vector::borrow(name_vec, 1) == &string(b"Rare"), 4);
-            assert!(vector::borrow(url_vec, 1) == url::new_unsafe(string(b"https://i.imgur.com/9Lu930k.png")), 5);
+            assert!(vector::borrow(name_vec, 1) == &rare_name, 4);
+            assert!(vector::borrow(url_vec, 1) == url::new_unsafe(rare_url), 5);
 
-            assert!(vector::borrow(name_vec, 2) == &string(b"Legendary"), 6);
-            assert!(vector::borrow(url_vec, 2) == url::new_unsafe(string(b"https://i.imgur.com/NkSyJjT.png")), 7);
+            assert!(vector::borrow(name_vec, 2) == &legendary_name, 6);
+            assert!(vector::borrow(url_vec, 2) == url::new_unsafe(legendary_url), 7);
 
-            assert!(vector::borrow(name_vec, 3) == &string(b"Epic"), 8);
-            assert!(vector::borrow(url_vec, 3) == url::new_unsafe(string(b"https://i.imgur.com/C965eRh.png")), 9);
+            assert!(vector::borrow(name_vec, 3) == &epic_name, 8);
+            assert!(vector::borrow(url_vec, 3) == url::new_unsafe(epic_url), 9);
 
             test_scenario::return_to_sender(scenario, admin_cap);
             test_scenario::return_shared(pfp_state);
