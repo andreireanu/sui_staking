@@ -2,7 +2,7 @@
 module sui_staking::nft_tests{
 
     use sui::test_scenario;
-    use sui_staking::PFP_NFT::{Self, PFPState, AdminCap};
+    use sui_staking::PFP_NFT::{Self, PFPState, NftAdminCap};
     use sui::url;
     use std::ascii::string;
     use sui::random::{Self, Random};
@@ -23,7 +23,7 @@ module sui_staking::nft_tests{
         };
         test_scenario::next_tx(scenario, owner); 
         {
-            let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
+            let admin_cap = test_scenario::take_from_sender<NftAdminCap>(scenario);
             let mut pfp_state = test_scenario::take_shared<PFPState>(scenario);
 
             // Define test data for names and URLs
@@ -97,7 +97,7 @@ module sui_staking::nft_tests{
 
         test_scenario::next_tx(scenario, owner); 
         {
-            let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
+            let admin_cap = test_scenario::take_from_sender<NftAdminCap>(scenario);
             let mut pfp_state = test_scenario::take_shared<PFPState>(scenario);
 
             let common_name = string(b"Common");

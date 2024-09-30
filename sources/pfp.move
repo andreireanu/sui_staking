@@ -9,7 +9,7 @@ module sui_staking::PFP_NFT {
     use sui::display;
     use sui::package;
     use sui::tx_context::{sender};
-    use std::debug;
+    // use std::debug;
 
     const TOTAL_COMMON: u16 = 4;
     const TOTAL_RARE: u16 = 3;
@@ -33,7 +33,7 @@ module sui_staking::PFP_NFT {
         name_vec: vector<String>,
     }
 
-    public struct AdminCap has key {  
+    public struct NftAdminCap has key {  
         id: UID
     }
 
@@ -79,11 +79,11 @@ module sui_staking::PFP_NFT {
         };
         transfer::share_object(pfp_state);
 
-        let admin_cap = AdminCap { id: object::new(ctx) };
+        let admin_cap = NftAdminCap { id: object::new(ctx) };
         transfer::transfer(admin_cap, tx_context::sender(ctx));
     }
 
-    entry fun set_collection( _ : &AdminCap, pfp_state: &mut PFPState, 
+    entry fun set_collection( _ : &NftAdminCap, pfp_state: &mut PFPState, 
         common_name: String,
         common_url: String, 
         rare_name: String,
@@ -118,7 +118,6 @@ module sui_staking::PFP_NFT {
 
         let rarity = select_rarity(pfp_state, random, ctx);
         let pfp = mint_nft(rarity, pfp_state, ctx);
-        debug::print(&tx_context::sender(ctx));
         transfer::transfer(pfp, tx_context::sender(ctx));
     }
 
@@ -165,7 +164,7 @@ module sui_staking::PFP_NFT {
         id.delete()
     }
 
-    entry fun withdraw(_: &AdminCap, pfp_state: &mut PFPState, amount: u64, ctx: &mut TxContext) {
+    entry fun withdraw(_: &NftAdminCap, pfp_state: &mut PFPState, amount: u64, ctx: &mut TxContext) {
         assert!(balance::value(&pfp_state.treasury) >= amount, EInvalidAmount);
         let withdrawal_amount = coin::take<SUI>(&mut pfp_state.treasury, amount, ctx);
         transfer::public_transfer(withdrawal_amount, tx_context::sender(ctx));

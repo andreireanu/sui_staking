@@ -11,11 +11,11 @@ sui client publish --gas-budget 100000000
 #### CALL SET_COLLECTION FUNCTION (change package name and minter cap after publishing):
 ```bash
 sui client call \
---package 0x97d7b904a8eae1bab03d5ce6e2f0c7ed42840d5d6c80639a52f2e4a38870197f \
+--package 0x11c28eef71a26d572c09d67baf01252b8946d41d61b76701172416cb2cbe5089 \
 --module PFP_NFT \
 --function set_collection \
---args "0x579705cd6df1438e837627e7eff9386c367dc5ba58b793e5c8e85471a5765bf5" \
-"0xf07b1359e7ee30e511de2e57a12c5f43e4b14fb24cf39a0379590303cf8683c2" \
+--args "0xb12e8d1e1a178f7055e60a8f100219419aaaedd3201ec081c7be525ed194b6a3" \
+"0x2c4793240066f5b9f9b2dc07a8024329579b374a8a3361b2120221e30dba3ef0" \
 "Common" \
 "https://i.imgur.com/TYekL74.png" \
 "Rare" \
@@ -31,11 +31,11 @@ sui client call \
 #### CALL MINT FUNCTION (change package name and minter cap after publishing):
 ```bash
 sui client call \
---package 0x97d7b904a8eae1bab03d5ce6e2f0c7ed42840d5d6c80639a52f2e4a38870197f \
+--package 0x11c28eef71a26d572c09d67baf01252b8946d41d61b76701172416cb2cbe5089 \
 --module PFP_NFT \
 --function mint \
---args "0xa26658d8ca582d78bfda1a9866cf296d9d81a0662f8de1a8875c0b68140180f9" \
-"0xf07b1359e7ee30e511de2e57a12c5f43e4b14fb24cf39a0379590303cf8683c2" \
+--args "0x8179bdabfe31593f77d9132d4d3ab39ca179e7d07bf1e0778e187f5078d9945b" \
+"0x2c4793240066f5b9f9b2dc07a8024329579b374a8a3361b2120221e30dba3ef0" \
 "0x8" \
 --gas-budget 100000000
  
