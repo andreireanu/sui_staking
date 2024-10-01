@@ -30,7 +30,6 @@ module sui_staking::staking {
 
     public struct UserState has store, key {
         id: UID,
-        address: address,
         staked_nfts: vector<PFP>, // Mapping that keeps track of users' staked NFTs
         staked_value: u64,
         last_rewards_per_share: u64,
@@ -108,7 +107,9 @@ module sui_staking::staking {
     fun update_global_state_general(reward_state: &mut RewardState, clock: &Clock) {
         let timestamp = clock::timestamp_ms(clock);
         assert!(timestamp > reward_state.updated_at, EInvalidTimestamp);
-        reward_state.rewards_per_share = reward_state.rewards_per_share + (timestamp - reward_state.updated_at) * DIVISION_SAFETY_CONSTANT / reward_state.staked_value;
+        if (reward_state.staked_value > 0) {
+            reward_state.rewards_per_share = reward_state.rewards_per_share + (timestamp - reward_state.updated_at) * DIVISION_SAFETY_CONSTANT / reward_state.staked_value;
+        };
         reward_state.updated_at = timestamp;
     }
     
@@ -118,7 +119,6 @@ module sui_staking::staking {
         if (!table::contains(&user_registry.users, caller)) {
             let userState = UserState {
                 id: object::new(ctx),
-                address: caller,
                 staked_nfts: vector::singleton(nft),
                 staked_value: nft_rarity + 1,
                 last_rewards_per_share: reward_state.rewards_per_share,
@@ -171,5 +171,35 @@ module sui_staking::staking {
     #[test_only]
     public fun get_reward_state_total_rewards(reward_state: &RewardState): u64 {
         reward_state.total_rewards.value()
+    }
+
+    #[test_only]
+    public fun stake_for_testing(nft: PFP, reward_state: &mut RewardState, user_registry: &mut UserRegistry, clock: &Clock, ctx: &mut TxContext) {
+        stake(nft, reward_state, user_registry, clock, ctx);
+    }
+
+    #[test_only]
+    public fun get_user_state_staked_nfts(state: &UserState): &vector<PFP> {
+        &state.staked_nfts
+    }
+
+    #[test_only]
+    public fun get_user_state_staked_value(state: &UserState): u64 {
+        state.staked_value
+    }
+
+    #[test_only]
+    public fun get_user_state_last_rewards_per_share(state: &UserState): u64 {
+        state.last_rewards_per_share
+    }
+
+    #[test_only]
+    public fun get_user_state_pending_rewards(state: &UserState): u64 {
+        state.pendingRewards.value()
+    }
+
+    #[test_only]
+    public fun get_user_state(user_registry: &UserRegistry, address: address): &UserState {
+        user_registry.users.borrow(address)
     }
 }

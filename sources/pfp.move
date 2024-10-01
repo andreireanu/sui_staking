@@ -10,6 +10,7 @@ module sui_staking::PFP_NFT {
     use sui::package;
     use sui::tx_context::{sender};
     // use std::debug;
+    // use sui::object
 
     const TOTAL_COMMON: u16 = 4;
     const TOTAL_RARE: u16 = 3;
@@ -170,8 +171,13 @@ module sui_staking::PFP_NFT {
         transfer::public_transfer(withdrawal_amount, tx_context::sender(ctx));
     }
 
-    public fun get_rarity(pfp: &PFP): u16 {
-        pfp.rarity
+    public fun get_id(pfp: &PFP): &ID {
+        let id = &pfp.id;
+        id.as_inner()
+    }
+
+    public fun get_rarity(pfp: &PFP): u64 {
+        pfp.rarity as u64
     }
 
     #[test_only]
