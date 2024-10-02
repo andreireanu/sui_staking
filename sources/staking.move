@@ -6,7 +6,6 @@ module sui_staking::staking {
     use sui::clock::{Self, Clock};
     use sui::coin::{Self, Coin};
     use sui::table::{Self, Table};
-    use std::debug;
 
     const DIVISION_SAFETY_CONSTANT: u64 = 1;
 
@@ -128,7 +127,7 @@ module sui_staking::staking {
         } else {
             let user_state = user_registry.users.borrow_mut(caller);
             vector::push_back(&mut user_state.staked_nfts, nft);
-            let rewards_to_add = reward_state.rewards_per_share * user_state.staked_value / DIVISION_SAFETY_CONSTANT;
+            let rewards_to_add = (reward_state.rewards_per_share - user_state.last_rewards_per_share) * user_state.staked_value / DIVISION_SAFETY_CONSTANT;
             let rewards_to_add_from_storage = balance::split(&mut reward_state.total_rewards, rewards_to_add);
             balance::join(&mut user_state.pendingRewards , rewards_to_add_from_storage );
             user_state.last_rewards_per_share = reward_state.rewards_per_share;
