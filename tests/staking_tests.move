@@ -195,7 +195,6 @@ module sui_staking::staking_tests{
             rewards_per_share = rewards_per_share + 
                tick * DIVISION_SAFETY_CONSTANT * reward_state.get_reward_state_reward_rate() / total_staked;
             total_staked = total_staked + alice_nft_1_value;
-            debug::print(&rewards_per_share);
 
             assert_user_state_equals(
                 user_state,
@@ -250,7 +249,6 @@ module sui_staking::staking_tests{
             rewards_per_share = rewards_per_share + 
                tick * DIVISION_SAFETY_CONSTANT * reward_state.get_reward_state_reward_rate() / total_staked;
             total_staked = total_staked + bob_nft_0_value;
-            debug::print(&rewards_per_share);
 
             assert_user_state_equals(
                 user_state,
@@ -360,7 +358,57 @@ module sui_staking::staking_tests{
                 total_staked,
                 rewards_per_share,
                 amount - 9_999_999_999 - 2_222_222_222 - 23_611_111_104
+            );
 
+            test_scenario::return_shared(reward_state);
+            test_scenario::return_shared(user_registry);
+
+        };
+ 
+        clock::increment_for_testing(&mut clock, tick);
+
+        // Alice unstakes the first NFT
+        test_scenario::next_tx(scenario, alice); 
+        {
+            let mut user_registry = test_scenario::take_shared<UserRegistry>(scenario);
+            let mut reward_state = test_scenario::take_shared<RewardState>(scenario);
+            let ctx = test_scenario::ctx(scenario);
+            staking::unstake_for_testing(alice_staked_nfts[0],  &mut reward_state, &mut user_registry, &clock, ctx);
+            vector::remove(&mut alice_staked_nfts, 0);
+
+            test_scenario::return_shared(reward_state);
+            test_scenario::return_shared(user_registry);
+        };
+ 
+        // Check Alice state and global state
+        test_scenario::next_tx(scenario, alice); 
+        {
+            let user_registry = test_scenario::take_shared<UserRegistry>(scenario);
+            let user_state = staking::get_user_state(&user_registry, alice);
+            let reward_state = test_scenario::take_shared<RewardState>(scenario);
+
+            rewards_per_share = rewards_per_share + 
+               tick * DIVISION_SAFETY_CONSTANT * reward_state.get_reward_state_reward_rate()   / total_staked;
+
+            total_staked = total_staked - alice_nft_0_value; 
+             
+            assert_user_state_equals(
+                user_state,
+                &alice_staked_nfts, 
+                alice_nft_1_value,
+                rewards_per_share,
+                5_833_333_331
+            );
+
+            assert_reward_state_equals(
+                &reward_state,
+                duration,
+                tick + duration,
+                tick * 7,
+                amount / duration,
+                total_staked,
+                rewards_per_share,
+                amount - 9_999_999_999 - 2_222_222_222 - 23_611_111_104 - 5_833_333_331
             );
 
             test_scenario::return_shared(reward_state);
@@ -368,6 +416,97 @@ module sui_staking::staking_tests{
 
         };
 
+        clock::increment_for_testing(&mut clock, tick);
+
+        // Alice claims rewards
+        test_scenario::next_tx(scenario, alice); 
+        {
+            let mut reward_state = test_scenario::take_shared<RewardState>(scenario);
+            let mut user_registry = test_scenario::take_shared<UserRegistry>(scenario);
+            let ctx = test_scenario::ctx(scenario);
+
+            staking::claim_rewards_for_testing(&mut reward_state, &mut user_registry, &clock, ctx);
+
+            test_scenario::return_shared(reward_state);
+            test_scenario::return_shared(user_registry);
+        };
+        // Check Alice state and global state
+        test_scenario::next_tx(scenario, alice); 
+        {
+            let user_registry = test_scenario::take_shared<UserRegistry>(scenario);
+            let user_state = staking::get_user_state(&user_registry, alice);
+            let reward_state = test_scenario::take_shared<RewardState>(scenario);
+
+            rewards_per_share = rewards_per_share + 
+               tick * DIVISION_SAFETY_CONSTANT * reward_state.get_reward_state_reward_rate() / total_staked;
+
+            assert_user_state_equals(
+                user_state,
+                &alice_staked_nfts, 
+                alice_nft_1_value,
+                rewards_per_share,
+                0
+            );
+
+            assert_reward_state_equals(
+                &reward_state,
+                duration,
+                tick + duration,
+                tick * 8,
+                amount / duration,
+                total_staked,
+                rewards_per_share,
+                amount - 9_999_999_999 - 2_222_222_222 - 23_611_111_104 - 10_277_777_775
+            );
+
+            test_scenario::return_shared(reward_state);
+            test_scenario::return_shared(user_registry);
+
+        };
+
+        // Bob claims rewards
+        test_scenario::next_tx(scenario, bob); 
+        {
+            let mut reward_state = test_scenario::take_shared<RewardState>(scenario);
+            let mut user_registry = test_scenario::take_shared<UserRegistry>(scenario);
+            let ctx = test_scenario::ctx(scenario);
+
+            staking::claim_rewards_for_testing(&mut reward_state, &mut user_registry, &clock, ctx);
+
+            test_scenario::return_shared(reward_state);
+            test_scenario::return_shared(user_registry);
+        };
+        // Check Bob state and global state
+        test_scenario::next_tx(scenario, bob); 
+        {
+            let user_registry = test_scenario::take_shared<UserRegistry>(scenario);
+            let user_state = staking::get_user_state(&user_registry, bob);
+            let reward_state = test_scenario::take_shared<RewardState>(scenario);
+
+            assert_user_state_equals(
+                user_state,
+                &bob_staked_nfts, 
+                bob_nft_0_value + bob_nft_1_value,
+                rewards_per_share,
+                0
+            );
+
+            assert_reward_state_equals(
+                &reward_state,
+                duration,
+                tick + duration,
+                tick * 8,
+                amount / duration,
+                total_staked,
+                rewards_per_share,
+                amount - 9_999_999_999 - 2_222_222_222 - 23_611_111_104 - 10_277_777_775 - 13_888_888_885
+            );
+
+            test_scenario::return_shared(reward_state);
+            test_scenario::return_shared(user_registry);
+
+        };
+ 
         clock::destroy_for_testing(clock);
         test_scenario::end(scenario_val);
     }
@@ -449,7 +588,7 @@ module sui_staking::staking_tests{
     ) {
         assert_vector_has_ids(staking::get_user_state_staked_nfts(state), staked_nfts);
         assert!(staking::get_user_state_staked_value(state) == staked_value, 3);
-        assert!(staking::get_user_state_last_rewards_per_share(state) == last_rewards_per_share, 4);
+        assert!(staking::get_user_state_last_rewards_per_share(state) == last_rewards_per_share, 4); 
         assert!(staking::get_user_state_pending_rewards(state) == pending_rewards, 5);
     }
 

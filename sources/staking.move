@@ -6,7 +6,7 @@ module sui_staking::staking {
     use sui::clock::{Self, Clock};
     use sui::coin::{Self, Coin};
     use sui::table::{Self, Table};
-    use std::debug;
+    // use std::debug;
 
     const DIVISION_SAFETY_CONSTANT: u64 = 1;
 
@@ -46,14 +46,8 @@ module sui_staking::staking {
     }
 
     const ERewardDurationNotExpired: u64 = 100;
-    // const EZeroreward_rate: u64 = 101;
-    // const EZeroAmount: u64 = 102;
-    // const ELowRewardsTreasuryBalance: u64 = 103;
-    // const ERequestedAmountExceedsStaked: u64 = 104;
-    // const ENoRewardsToClaim: u64 = 105;
-    // const ENoStakedTokens: u64 = 106;
-    // const ENoPriorTokenStake: u64 = 107;
-    const EInvalidTimestamp: u64 = 108;
+    const EInvalidTimestamp: u64 = 101;
+    const EInvalidNFT: u64 = 102;
 
     fun init (ctx: &mut TxContext) {
         transfer::share_object(RewardState{
@@ -94,6 +88,13 @@ module sui_staking::staking {
         update_user_state_general_on_stake(nft, reward_state, user_registry, ctx);
     }  
 
+    public entry fun unstake(nft_id: ID, reward_state: &mut RewardState, user_registry: &mut UserRegistry, clock: &Clock, ctx: &TxContext) {
+        let caller = tx_context::sender(ctx);
+        update_global_state_general(reward_state, clock);
+        let nft = update_states_on_unstake(nft_id, reward_state, user_registry, ctx);
+        transfer::public_transfer(nft, caller);
+    } 
+
     public entry fun claim_rewards(reward_state: &mut RewardState, user_registry: &mut UserRegistry, clock: &Clock, ctx: &mut TxContext) {
         update_global_state_general(reward_state, clock);
         let caller = tx_context::sender(ctx);
@@ -104,7 +105,6 @@ module sui_staking::staking {
         balance::join(&mut user_state.pending_rewards, rewards_to_add_from_storage);
         let pending_rewards = user_state.pending_rewards.value();
         let total_rewards_coin = coin::take<CODE>(&mut user_state.pending_rewards, pending_rewards, ctx);
-        debug::print(&pending_rewards);
         transfer::public_transfer(total_rewards_coin, tx_context::sender(ctx));
     } 
 
@@ -137,8 +137,32 @@ module sui_staking::staking {
             balance::join(&mut user_state.pending_rewards , rewards_to_add_from_storage );
             user_state.last_rewards_per_share = reward_state.rewards_per_share;
             user_state.staked_value = user_state.staked_value + nft_rarity + 1;
-
         }
+    }
+
+    fun update_states_on_unstake(nft_id: ID, reward_state: &mut RewardState, user_registry: &mut UserRegistry, ctx: &TxContext): PFP {
+        let caller = tx_context::sender(ctx);
+        let user_state = user_registry.users.borrow_mut(caller);
+        let mut idx = 0;
+        let length = vector::length(&user_state.staked_nfts);
+        while (idx < length) {
+            let nft = vector::borrow(&user_state.staked_nfts, idx);
+            if (object::id(nft) == nft_id) {
+                break
+            };
+            idx = idx + 1;
+        };
+        assert!(idx < length, EInvalidNFT);
+        let rewards_to_add = (reward_state.rewards_per_share - user_state.last_rewards_per_share) * user_state.staked_value / DIVISION_SAFETY_CONSTANT;
+        let rewards_to_add_from_storage = balance::split(&mut reward_state.total_rewards, rewards_to_add);
+        balance::join(&mut user_state.pending_rewards, rewards_to_add_from_storage);
+        user_state.last_rewards_per_share = reward_state.rewards_per_share;
+        let nft = vector::remove(&mut user_state.staked_nfts, idx);
+        let nft_rarity = PFP_NFT::get_rarity(&nft) as u64;
+        user_state.staked_value = user_state.staked_value - nft_rarity - 1;
+        reward_state.staked_value = reward_state.staked_value - nft_rarity - 1;
+        nft
+
     }
 
     #[test_only]
@@ -214,5 +238,10 @@ module sui_staking::staking {
     #[test_only]
     public fun claim_rewards_for_testing(reward_state: &mut RewardState, user_registry: &mut UserRegistry, clock: &Clock, ctx: &mut TxContext) {
         claim_rewards(reward_state, user_registry, clock, ctx);
+    }
+
+    #[test_only]
+    public fun unstake_for_testing(nft_id: ID, reward_state: &mut RewardState, user_registry: &mut UserRegistry, clock: &Clock, ctx: &TxContext) {
+        unstake(nft_id, reward_state, user_registry, clock, ctx);
     }
 }

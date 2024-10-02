@@ -1,3 +1,5 @@
+# SUI NFT STAKING:
+
 #### SPLIT COIN:
 ```bash
 sui client pay-sui --input-coins 0x02ea29302ccb57949db982a42b25aac7734dfd8ce39c21a3b6f8539047872047 --recipients 0xe2623b169befe8f6e24e317e4d3afc145ccd4ab7237b9311a02ceb863043e98a --amounts 2000000000 --gas-budget 100000000
@@ -50,4 +52,6 @@ Legendary url:      "https://i.imgur.com/C965eRh.png" \
 Epic url:           "https://i.imgur.com/NkSyJjT.png"
 
 
- 
+### Staking Scenario Tested:
+
+![Complex Scenario](./tests/complex-scenario.png)
