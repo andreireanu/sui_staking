@@ -6,6 +6,7 @@ module sui_staking::staking {
     use sui::clock::{Self, Clock};
     use sui::coin::{Self, Coin};
     use sui::table::{Self, Table};
+    use std::debug;
 
     const DIVISION_SAFETY_CONSTANT: u64 = 1;
 
@@ -32,7 +33,7 @@ module sui_staking::staking {
         staked_nfts: vector<PFP>, // Mapping that keeps track of users' staked NFTs
         staked_value: u64,
         last_rewards_per_share: u64,
-        pendingRewards: Balance<CODE>,
+        pending_rewards: Balance<CODE>,
     }
 
     public struct UserRegistry has key {
@@ -93,19 +94,23 @@ module sui_staking::staking {
         update_user_state_general_on_stake(nft, reward_state, user_registry, ctx);
     }  
 
-    public entry fun claim_rewards(reward_state: &mut RewardState, user_registry: &mut UserRegistry, ctx: &mut TxContext) {
+    public entry fun claim_rewards(reward_state: &mut RewardState, user_registry: &mut UserRegistry, clock: &Clock, ctx: &mut TxContext) {
+        update_global_state_general(reward_state, clock);
         let caller = tx_context::sender(ctx);
         let user_state = user_registry.users.borrow_mut(caller);
-        let current_rewards = (reward_state.rewards_per_share - user_state.last_rewards_per_share) * user_state.staked_value / reward_state.staked_value;
+        let current_rewards = (reward_state.rewards_per_share - user_state.last_rewards_per_share) * user_state.staked_value / DIVISION_SAFETY_CONSTANT;
         user_state.last_rewards_per_share = reward_state.rewards_per_share;
-        let pendingRewards = user_state.pendingRewards.value() + current_rewards;
-        let total_rewards_coin = coin::take<CODE>(&mut reward_state.total_rewards, pendingRewards, ctx);
+        let rewards_to_add_from_storage = balance::split(&mut reward_state.total_rewards, current_rewards);
+        balance::join(&mut user_state.pending_rewards, rewards_to_add_from_storage);
+        let pending_rewards = user_state.pending_rewards.value();
+        let total_rewards_coin = coin::take<CODE>(&mut user_state.pending_rewards, pending_rewards, ctx);
+        debug::print(&pending_rewards);
         transfer::public_transfer(total_rewards_coin, tx_context::sender(ctx));
     } 
 
     fun update_global_state_general(reward_state: &mut RewardState, clock: &Clock) {
         let timestamp = clock::timestamp_ms(clock);
-        assert!(timestamp > reward_state.updated_at, EInvalidTimestamp);
+        assert!(timestamp >= reward_state.updated_at, EInvalidTimestamp);
         if (reward_state.staked_value > 0) {
             reward_state.rewards_per_share = reward_state.rewards_per_share + (timestamp - reward_state.updated_at) * DIVISION_SAFETY_CONSTANT * reward_state.reward_rate / reward_state.staked_value;
         };
@@ -121,7 +126,7 @@ module sui_staking::staking {
                 staked_nfts: vector::singleton(nft),
                 staked_value: nft_rarity + 1,
                 last_rewards_per_share: reward_state.rewards_per_share,
-                pendingRewards: balance::zero<CODE>()
+                pending_rewards: balance::zero<CODE>()
             }; 
             table::add(&mut user_registry.users, caller, userState);
         } else {
@@ -129,7 +134,7 @@ module sui_staking::staking {
             vector::push_back(&mut user_state.staked_nfts, nft);
             let rewards_to_add = (reward_state.rewards_per_share - user_state.last_rewards_per_share) * user_state.staked_value / DIVISION_SAFETY_CONSTANT;
             let rewards_to_add_from_storage = balance::split(&mut reward_state.total_rewards, rewards_to_add);
-            balance::join(&mut user_state.pendingRewards , rewards_to_add_from_storage );
+            balance::join(&mut user_state.pending_rewards , rewards_to_add_from_storage );
             user_state.last_rewards_per_share = reward_state.rewards_per_share;
             user_state.staked_value = user_state.staked_value + nft_rarity + 1;
 
@@ -146,7 +151,7 @@ module sui_staking::staking {
         reward_state.duration
     }
 
-        #[test_only]
+    #[test_only]
     public fun get_reward_state_finish_at(reward_state: &RewardState): u64 {
         reward_state.finish_at
     }
@@ -198,11 +203,16 @@ module sui_staking::staking {
 
     #[test_only]
     public fun get_user_state_pending_rewards(state: &UserState): u64 {
-        state.pendingRewards.value()
+        state.pending_rewards.value()
     }
 
     #[test_only]
     public fun get_user_state(user_registry: &UserRegistry, address: address): &UserState {
         user_registry.users.borrow(address)
+    }
+
+    #[test_only]
+    public fun claim_rewards_for_testing(reward_state: &mut RewardState, user_registry: &mut UserRegistry, clock: &Clock, ctx: &mut TxContext) {
+        claim_rewards(reward_state, user_registry, clock, ctx);
     }
 }
