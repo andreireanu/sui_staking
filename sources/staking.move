@@ -6,9 +6,9 @@ module sui_staking::staking {
     use sui::clock::{Self, Clock};
     use sui::coin::{Self, Coin};
     use sui::table::{Self, Table};
-    // use std::debug;
+    use std::debug;
 
-    const DIVISION_SAFETY_CONSTANT: u64 = 1_000_000_000;
+    const DIVISION_SAFETY_CONSTANT: u64 = 1;
 
     /// Every staked NFT has a reward multiplier according to its rarity:
     /// Common: 1
@@ -97,7 +97,7 @@ module sui_staking::staking {
     public entry fun claim_rewards(reward_state: &mut RewardState, user_registry: &mut UserRegistry, ctx: &mut TxContext) {
         let caller = tx_context::sender(ctx);
         let user_state = user_registry.users.borrow_mut(caller);
-        let current_rewards = (reward_state.rewards_per_share - user_state.last_rewards_per_share) * user_state.staked_value / DIVISION_SAFETY_CONSTANT;
+        let current_rewards = (reward_state.rewards_per_share - user_state.last_rewards_per_share) * user_state.staked_value / reward_state.staked_value;
         user_state.last_rewards_per_share = reward_state.rewards_per_share;
         let pendingRewards = user_state.pendingRewards.value() + current_rewards;
         let total_rewards_coin = coin::take<CODE>(&mut reward_state.total_rewards, pendingRewards, ctx);
@@ -108,12 +108,12 @@ module sui_staking::staking {
         let timestamp = clock::timestamp_ms(clock);
         assert!(timestamp > reward_state.updated_at, EInvalidTimestamp);
         if (reward_state.staked_value > 0) {
-            reward_state.rewards_per_share = reward_state.rewards_per_share + (timestamp - reward_state.updated_at) * DIVISION_SAFETY_CONSTANT / reward_state.staked_value;
+            reward_state.rewards_per_share = reward_state.rewards_per_share + (timestamp - reward_state.updated_at) * DIVISION_SAFETY_CONSTANT * reward_state.reward_rate / reward_state.staked_value;
         };
         reward_state.updated_at = timestamp;
     }
     
-    fun update_user_state_general_on_stake(nft: PFP, reward_state: &RewardState, user_registry: &mut UserRegistry, ctx: &mut TxContext) {
+    fun update_user_state_general_on_stake(nft: PFP, reward_state: &mut RewardState, user_registry: &mut UserRegistry, ctx: &mut TxContext) {
         let caller = tx_context::sender(ctx);
         let nft_rarity = PFP_NFT::get_rarity(&nft) as u64;
         if (!table::contains(&user_registry.users, caller)) {
@@ -128,8 +128,12 @@ module sui_staking::staking {
         } else {
             let user_state = user_registry.users.borrow_mut(caller);
             vector::push_back(&mut user_state.staked_nfts, nft);
-            user_state.staked_value = user_state.staked_value + nft_rarity + 1;
+            let rewards_to_add = reward_state.rewards_per_share * user_state.staked_value / DIVISION_SAFETY_CONSTANT;
+            let rewards_to_add_from_storage = balance::split(&mut reward_state.total_rewards, rewards_to_add);
+            balance::join(&mut user_state.pendingRewards , rewards_to_add_from_storage );
             user_state.last_rewards_per_share = reward_state.rewards_per_share;
+            user_state.staked_value = user_state.staked_value + nft_rarity + 1;
+
         }
     }
 
