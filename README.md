@@ -1,9 +1,24 @@
-# SUI NFT STAKING:
+# SUI NFT STAKING
 
-#### SPLIT COIN:
-```bash
-sui client pay-sui --input-coins 0x02ea29302ccb57949db982a42b25aac7734dfd8ce39c21a3b6f8539047872047 --recipients 0xe2623b169befe8f6e24e317e4d3afc145ccd4ab7237b9311a02ceb863043e98a --amounts 2000000000 --gas-budget 100000000
- ```
+## Overview
+
+This project implements an NFT staking system on the Sui blockchain where users can stake their PFP NFTs to earn CODE token rewards. The staking mechanism features a rarity-based reward multiplier system that incentivizes staking rarer NFTs.
+
+### Reward Multiplier System
+
+Every staked NFT has a reward multiplier according to its rarity:
+- **Common**: 1x multiplier
+- **Rare**: 2x multiplier  
+- **Epic**: 3x multiplier
+- **Legendary**: 4x multiplier
+
+This means that staking a Legendary NFT will earn 4 times more rewards than staking a Common NFT over the same time period. The system calculates rewards based on the total staked value across all users, ensuring fair distribution while rewarding rarity.
+
+### Reward Distribution Mechanism
+
+Rewards are distributed continuously on a per-second basis from a shared reward pool. Each staker's share of the rewards is proportional to their contribution to the total staked value in the pool. For example, if the total staked value is 100 and you have staked NFTs worth 10 points, you'll receive 10% of the rewards distributed each second. This creates a dynamic and fair reward system where your earnings depend on both the rarity of your staked NFTs and the overall participation in the staking pool.
+
+## Setup Instructions
 
 #### PUBLISH:
 ```bash
